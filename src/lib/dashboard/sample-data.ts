@@ -88,5 +88,5 @@ export function getMonthOptions(year: number) {
 }
 
 export function formatMoney(amount: number) {
-  return `Rs ${amount.toLocaleString("en-PK")}`;
+  return `Rs ${Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
 }

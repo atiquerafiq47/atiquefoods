@@ -2,6 +2,7 @@ export type Item = {
   id: string;
   name: string;
   stockGrams: number;
+  purchasePricePerKg: number;
   salePricePerKg: number;
 };
 
@@ -15,6 +16,23 @@ export type SaleLine = {
   itemId: string;
   grams: number;
   amount: number;
+  cost: number;
+  returnedGrams: number;
+};
+
+export type ReturnLine = {
+  itemId: string;
+  grams: number;
+  amount: number;
+};
+
+export type ReturnRecord = {
+  id: string;
+  saleId: string;
+  customerId: string;
+  createdAt: string;
+  lines: ReturnLine[];
+  total: number;
 };
 
 export type Sale = {
@@ -30,5 +48,6 @@ export type StockEntry = {
   itemId: string;
   grams: number;
   createdAt: string;
-  type: "in" | "out";
+  type: "in" | "out" | "return";
+  cost: number;
 };

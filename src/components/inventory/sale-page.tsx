@@ -19,7 +19,12 @@ export function SalePage() {
   const { items, customers, createSale } = useInventory();
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [lines, setLines] = useState<DraftLine[]>([
-    { key: "line-1", itemId: items[0]?.id ?? "", kg: "", grams: "" },
+    {
+      key: "line-1",
+      itemId: items.find((item) => item.stockGrams > 0)?.id ?? items[0]?.id ?? "",
+      kg: "",
+      grams: "",
+    },
   ]);
   const [error, setError] = useState("");
 
@@ -33,12 +38,14 @@ export function SalePage() {
           item,
           grams,
           amount: item ? priceForGrams(item.salePricePerKg, grams) : 0,
+          cost: item ? priceForGrams(item.purchasePricePerKg, grams) : 0,
         };
       }),
     [items, lines],
   );
 
   const total = preview.reduce((sum, line) => sum + line.amount, 0);
+  const profit = preview.reduce((sum, line) => sum + (line.amount - line.cost), 0);
 
   function updateLine(key: string, patch: Partial<DraftLine>) {
     setLines((current) =>
@@ -48,27 +55,27 @@ export function SalePage() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const message = createSale({
+    const result = createSale({
       customerId,
       lines: preview
         .filter((line) => line.grams > 0)
         .map((line) => ({ itemId: line.itemId, grams: line.grams })),
     });
 
-    if (message) {
-      setError(message);
+    if ("error" in result) {
+      setError(result.error);
       return;
     }
 
-    router.push("/data");
+    router.push(`/sales/${result.saleId}/bill`);
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-8">
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">New sale</h1>
         <p className="mt-1 text-zinc-600">
-          Sell items by kg and grams. Stock goes down after you save.
+          Sell items by kg and grams. Profit is sale money minus the buy cost.
         </p>
       </header>
 
@@ -118,12 +125,17 @@ export function SalePage() {
                 className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
               >
                 {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · {formatWeight(item.stockGrams)} in stock
+                  <option key={item.id} value={item.id} disabled={item.stockGrams <= 0}>
+                    {item.stockGrams <= 0
+                      ? `${item.name} · Out of stock`
+                      : `${item.name} · ${formatWeight(item.stockGrams)} in stock`}
                   </option>
                 ))}
               </select>
             </label>
+            {line.item && line.item.stockGrams <= 0 && (
+              <p className="text-sm font-medium text-red-600">Out of stock</p>
+            )}
 
             <WeightInput
               kg={line.kg}
@@ -133,7 +145,8 @@ export function SalePage() {
             />
 
             <p className="text-sm text-zinc-500">
-              Line total: {formatMoney(line.amount)}
+              Line total: {formatMoney(line.amount)} · Profit:{" "}
+              {formatMoney(line.amount - line.cost)}
             </p>
           </section>
         ))}
@@ -156,9 +169,17 @@ export function SalePage() {
           Add another item
         </button>
 
-        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4">
-          <p className="font-medium">Sale total</p>
-          <p className="text-xl font-semibold text-emerald-700">{formatMoney(total)}</p>
+        <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white px-5 py-4">
+          <div className="flex items-center justify-between">
+            <p className="font-medium">Sale total</p>
+            <p className="text-xl font-semibold text-emerald-700">
+              {formatMoney(total)}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <p className="text-zinc-500">Profit</p>
+            <p className="font-medium text-zinc-800">{formatMoney(profit)}</p>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

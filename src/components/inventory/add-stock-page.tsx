@@ -12,6 +12,9 @@ export function AddStockPage() {
   const [name, setName] = useState(items[0]?.name ?? "");
   const [kg, setKg] = useState("");
   const [grams, setGrams] = useState("");
+  const [buyPrice, setBuyPrice] = useState(
+    String(items[0]?.purchasePricePerKg ?? ""),
+  );
   const [price, setPrice] = useState(String(items[0]?.salePricePerKg ?? ""));
   const [error, setError] = useState("");
 
@@ -19,6 +22,7 @@ export function AddStockPage() {
     event.preventDefault();
     const itemName = name.trim();
     const weight = toGrams(Number(kg), Number(grams));
+    const purchasePricePerKg = Number(buyPrice);
     const salePricePerKg = Number(price);
 
     if (!itemName) {
@@ -31,21 +35,31 @@ export function AddStockPage() {
       return;
     }
 
+    if (!purchasePricePerKg || purchasePricePerKg <= 0) {
+      setError("Add purchase price per kg.");
+      return;
+    }
+
     if (!salePricePerKg || salePricePerKg <= 0) {
       setError("Add sale price per kg.");
       return;
     }
 
-    addStock({ name: itemName, grams: weight, salePricePerKg });
+    addStock({
+      name: itemName,
+      grams: weight,
+      purchasePricePerKg,
+      salePricePerKg,
+    });
     router.push("/inventory");
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-8">
+    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">Add stock</h1>
         <p className="mt-1 text-zinc-600">
-          Add a new item or put more stock on an old item. Use kg and grams.
+          Add a new item or put more stock on an old item. Add the buy price and the sale price.
         </p>
       </header>
 
@@ -66,6 +80,7 @@ export function AddStockPage() {
                 (item) => item.name.toLowerCase() === nextName.toLowerCase(),
               );
               if (match) {
+                setBuyPrice(String(match.purchasePricePerKg));
                 setPrice(String(match.salePricePerKg));
               }
             }}
@@ -85,6 +100,17 @@ export function AddStockPage() {
           onKgChange={setKg}
           onGramsChange={setGrams}
         />
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
+          Purchase price per kg
+          <input
+            type="number"
+            min="1"
+            value={buyPrice}
+            onChange={(event) => setBuyPrice(event.target.value)}
+            className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
+          />
+        </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
           Sale price per kg

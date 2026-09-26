@@ -1,13 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { KpiCards } from "@/components/dashboard/kpi-cards";
+import { OrbitChart } from "@/components/dashboard/orbit-chart";
 import { SalesChart } from "@/components/dashboard/sales-chart";
-import { TopList } from "@/components/dashboard/top-list";
+import { CustomerBars } from "@/components/dashboard/customer-bars";
+import { formatMoney, getMonthOptions } from "@/lib/dashboard/sample-data";
 import {
-  formatMoney,
-  getMonthDashboard,
-  getMonthOptions,
-} from "@/lib/dashboard/sample-data";
+  ALL_TIME,
+  getMonthDailySales,
+  getMonthKpis,
+  getMonthTopCustomers,
+  getMonthTopItems,
+} from "@/lib/inventory/kpis";
+import { useInventory } from "@/lib/inventory/store";
+import { formatWeight } from "@/lib/inventory/units";
 
 type InventoryHomeProps = {
   siteName: string;
@@ -17,19 +24,39 @@ export function InventoryHome({ siteName }: InventoryHomeProps) {
   const now = new Date();
   const year = now.getFullYear();
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const { sales, returns, items, customers, stockEntries } = useInventory();
   const options = useMemo(() => getMonthOptions(year), [year]);
-  const dashboard = useMemo(() => getMonthDashboard(year, month), [year, month]);
-  const monthLabel = options.find((option) => option.month === month)?.label ?? "";
-  const totalSales = dashboard.days.reduce((sum, day) => sum + day.amount, 0);
+  const allTime = month === ALL_TIME;
+  const kpis = useMemo(
+    () => getMonthKpis(sales, returns, stockEntries, year, month),
+    [month, returns, sales, stockEntries, year],
+  );
+  const topItems = useMemo(
+    () => getMonthTopItems(sales, items, year, month),
+    [items, month, sales, year],
+  );
+  const topCustomers = useMemo(
+    () => getMonthTopCustomers(sales, customers, year, month),
+    [customers, month, sales, year],
+  );
+  const days = useMemo(
+    () => getMonthDailySales(sales, year, month),
+    [month, sales, year],
+  );
+  const topItemsRevenue = topItems.reduce((sum, item) => sum + item.revenue, 0);
+  const monthLabel = allTime
+    ? "All time"
+    : options.find((option) => option.month === month)?.label ?? "";
+  const totalSales = kpis.totalMonthlySale;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
+    <main className="flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-zinc-500">{siteName}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Home</h1>
-          <p className="text-zinc-600">
-            Monthly sales line graph, top items, and top customers.
+          <p className="hidden text-sm font-medium text-zinc-500 md:block">{siteName}</p>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Home</h1>
+          <p className="text-sm text-zinc-600 sm:text-base">
+            Sales, profit, investment, top items, and top customers.
           </p>
         </div>
 
@@ -38,8 +65,9 @@ export function InventoryHome({ siteName }: InventoryHomeProps) {
           <select
             value={month}
             onChange={(event) => setMonth(Number(event.target.value))}
-            className="h-11 min-w-48 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-900 outline-none focus:border-emerald-500"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-zinc-900 outline-none focus:border-emerald-500 sm:min-w-48"
           >
+            <option value={ALL_TIME}>All time</option>
             {options.map((option) => (
               <option key={option.month} value={option.month}>
                 {option.label} {year}
@@ -49,32 +77,43 @@ export function InventoryHome({ siteName }: InventoryHomeProps) {
         </label>
       </header>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <KpiCards kpis={kpis} allTime={allTime} />
+
+      <section className="w-full rounded-2xl border border-zinc-200 bg-white p-5">
         <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-sm font-medium text-zinc-500">Monthly sales</h2>
-            <p className="text-xl font-semibold">{monthLabel} {year}</p>
+            <h2 className="text-sm font-medium text-zinc-500">
+              {allTime ? "Yearly sales" : "Monthly sales"}
+            </h2>
+            <p className="text-xl font-semibold">
+              {allTime ? `${year}` : `${monthLabel} ${year}`}
+            </p>
           </div>
           <p className="text-2xl font-semibold text-emerald-700">
             {formatMoney(totalSales)}
           </p>
         </div>
-        <SalesChart days={dashboard.days} />
+        <div className="w-full">
+          <SalesChart days={days} />
+        </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <TopList
+      <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <OrbitChart
           heading="Top 3 selling items"
-          items={dashboard.topItems.map((item) => ({
+          centerValue={formatMoney(topItemsRevenue)}
+          items={topItems.map((item) => ({
             title: item.name,
-            subtitle: `${item.sold} kg sold · ${formatMoney(item.revenue)}`,
+            subtitle: `${formatWeight(item.soldGrams)} sold · ${formatMoney(item.revenue)}`,
+            value: item.revenue,
           }))}
         />
-        <TopList
+        <CustomerBars
           heading="Top 3 customers"
-          items={dashboard.topCustomers.map((customer) => ({
+          items={topCustomers.map((customer) => ({
             title: customer.name,
-            subtitle: `${customer.orders} orders · ${formatMoney(customer.spent)}`,
+            subtitle: `${customer.orders} ${customer.orders === 1 ? "order" : "orders"}`,
+            value: customer.spent,
           }))}
         />
       </div>
