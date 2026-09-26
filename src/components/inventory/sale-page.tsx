@@ -32,13 +32,13 @@ export function SalePage() {
     () =>
       lines.map((line) => {
         const item = items.find((entry) => entry.id === line.itemId);
-        const grams = toGrams(Number(line.kg), Number(line.grams));
+        const weightGrams = toGrams(Number(line.kg), Number(line.grams));
         return {
           ...line,
           item,
-          grams,
-          amount: item ? priceForGrams(item.salePricePerKg, grams) : 0,
-          cost: item ? priceForGrams(item.purchasePricePerKg, grams) : 0,
+          weightGrams,
+          amount: item ? priceForGrams(item.salePricePerKg, weightGrams) : 0,
+          cost: item ? priceForGrams(item.purchasePricePerKg, weightGrams) : 0,
         };
       }),
     [items, lines],
@@ -58,8 +58,8 @@ export function SalePage() {
     const result = createSale({
       customerId,
       lines: preview
-        .filter((line) => line.grams > 0)
-        .map((line) => ({ itemId: line.itemId, grams: line.grams })),
+        .filter((line) => line.weightGrams > 0)
+        .map((line) => ({ itemId: line.itemId, grams: line.weightGrams })),
     });
 
     if ("error" in result) {
