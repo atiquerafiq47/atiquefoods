@@ -4,6 +4,20 @@ export function toGrams(kg: number, grams: number) {
   return Math.round(safeKg * 1000 + safeGrams);
 }
 
+export function clampGrams(value: string) {
+  if (value === "") {
+    return "";
+  }
+
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount) || amount < 0) {
+    return "0";
+  }
+
+  return String(Math.min(999, Math.round(amount)));
+}
+
 export function formatWeight(grams: number) {
   const safe = Math.max(0, Math.round(grams));
   const kg = Math.floor(safe / 1000);

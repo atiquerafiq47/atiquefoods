@@ -50,6 +50,7 @@ export function AddStockPage() {
       </header>
 
       <form
+        noValidate
         onSubmit={submit}
         className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5"
       >

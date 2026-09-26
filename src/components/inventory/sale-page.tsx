@@ -72,7 +72,7 @@ export function SalePage() {
         </p>
       </header>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={submit} className="space-y-4">
         <section className="rounded-2xl border border-zinc-200 bg-white p-5">
           <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
             Customer

@@ -23,8 +23,8 @@ export function InventoryPage() {
         </Link>
       </header>
 
-      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-        <table className="w-full text-left text-sm">
+      <section className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+        <table className="w-full min-w-[520px] text-left text-sm">
           <thead className="bg-zinc-50 text-zinc-500">
             <tr>
               <th className="px-4 py-3 font-medium">Item</th>

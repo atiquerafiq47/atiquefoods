@@ -1,3 +1,5 @@
+import { clampGrams } from "@/lib/inventory/units";
+
 type WeightInputProps = {
   kg: string;
   grams: string;
@@ -29,10 +31,9 @@ export function WeightInput({
         <input
           type="number"
           min="0"
-          max="999"
           step="1"
           value={grams}
-          onChange={(event) => onGramsChange(event.target.value)}
+          onChange={(event) => onGramsChange(clampGrams(event.target.value))}
           className="h-11 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-900 outline-none focus:border-emerald-500"
         />
       </label>
