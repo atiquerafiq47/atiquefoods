@@ -31,6 +31,12 @@ export function InventoryPage() {
         </Link>
       </header>
 
+      {items.length === 0 && (
+        <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-8 text-center text-zinc-500">
+          No items yet. Add stock to start.
+        </p>
+      )}
+
       <section className="space-y-3 md:hidden">
         {items.map((item) => {
           const empty = item.stockGrams <= 0;
@@ -47,8 +53,7 @@ export function InventoryPage() {
                 <StockStatus grams={item.stockGrams} />
               </div>
               <p className="mt-2 text-sm text-zinc-500">
-                Buy {formatMoney(item.purchasePricePerKg)} / kg · Sale{" "}
-                {formatMoney(item.salePricePerKg)} / kg
+                Buy {formatMoney(item.purchasePricePerKg)} / kg
               </p>
             </article>
           );
@@ -62,7 +67,6 @@ export function InventoryPage() {
               <th className="px-4 py-3 font-medium">Item</th>
               <th className="px-4 py-3 font-medium">Stock</th>
               <th className="px-4 py-3 font-medium">Buy / kg</th>
-              <th className="px-4 py-3 font-medium">Sale / kg</th>
             </tr>
           </thead>
           <tbody>
@@ -81,7 +85,6 @@ export function InventoryPage() {
                     <StockStatus grams={item.stockGrams} />
                   </td>
                   <td className="px-4 py-3">{formatMoney(item.purchasePricePerKg)}</td>
-                  <td className="px-4 py-3">{formatMoney(item.salePricePerKg)}</td>
                 </tr>
               );
             })}

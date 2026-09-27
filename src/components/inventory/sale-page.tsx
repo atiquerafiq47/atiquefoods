@@ -12,18 +12,27 @@ type DraftLine = {
   itemId: string;
   kg: string;
   grams: string;
+  salePrice: string;
 };
+
+function lastSalePrice(items: { id: string; salePricePerKg: number }[], itemId: string) {
+  const item = items.find((entry) => entry.id === itemId);
+  return item && item.salePricePerKg > 0 ? String(item.salePricePerKg) : "";
+}
 
 export function SalePage() {
   const router = useRouter();
   const { items, customers, createSale } = useInventory();
+  const firstItemId =
+    items.find((item) => item.stockGrams > 0)?.id ?? items[0]?.id ?? "";
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [lines, setLines] = useState<DraftLine[]>([
     {
       key: "line-1",
-      itemId: items.find((item) => item.stockGrams > 0)?.id ?? items[0]?.id ?? "",
+      itemId: firstItemId,
       kg: "",
       grams: "",
+      salePrice: lastSalePrice(items, firstItemId),
     },
   ]);
   const [error, setError] = useState("");
@@ -33,11 +42,13 @@ export function SalePage() {
       lines.map((line) => {
         const item = items.find((entry) => entry.id === line.itemId);
         const weightGrams = toGrams(Number(line.kg), Number(line.grams));
+        const salePricePerKg = Number(line.salePrice);
         return {
           ...line,
           item,
           weightGrams,
-          amount: item ? priceForGrams(item.salePricePerKg, weightGrams) : 0,
+          salePricePerKg,
+          amount: salePricePerKg > 0 ? priceForGrams(salePricePerKg, weightGrams) : 0,
           cost: item ? priceForGrams(item.purchasePricePerKg, weightGrams) : 0,
         };
       }),
@@ -55,11 +66,22 @@ export function SalePage() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
+    const soldLines = preview.filter((line) => line.weightGrams > 0);
+
+    if (soldLines.some((line) => !line.salePricePerKg || line.salePricePerKg <= 0)) {
+      setError("Add sale price per kg for each item.");
+      return;
+    }
+
     const result = createSale({
       customerId,
       lines: preview
         .filter((line) => line.weightGrams > 0)
-        .map((line) => ({ itemId: line.itemId, grams: line.weightGrams })),
+        .map((line) => ({
+          itemId: line.itemId,
+          grams: line.weightGrams,
+          salePricePerKg: line.salePricePerKg,
+        })),
     });
 
     if ("error" in result) {
@@ -75,10 +97,17 @@ export function SalePage() {
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">New sale</h1>
         <p className="mt-1 text-zinc-600">
-          Sell items by kg and grams. Profit is sale money minus the buy cost.
+          Sell items by kg and grams. Type the sale price for each item.
         </p>
       </header>
 
+      {customers.length === 0 || items.length === 0 ? (
+        <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-8 text-center text-zinc-500">
+          {customers.length === 0
+            ? "Add a customer first."
+            : "Add stock first."}
+        </p>
+      ) : (
       <form noValidate onSubmit={submit} className="space-y-4">
         <section className="rounded-2xl border border-zinc-200 bg-white p-5">
           <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
@@ -121,7 +150,12 @@ export function SalePage() {
               Item
               <select
                 value={line.itemId}
-                onChange={(event) => updateLine(line.key, { itemId: event.target.value })}
+                onChange={(event) =>
+                  updateLine(line.key, {
+                    itemId: event.target.value,
+                    salePrice: lastSalePrice(items, event.target.value),
+                  })
+                }
                 className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
               >
                 {items.map((item) => (
@@ -144,6 +178,19 @@ export function SalePage() {
               onGramsChange={(value) => updateLine(line.key, { grams: value })}
             />
 
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
+              Sale price per kg
+              <input
+                type="number"
+                min="1"
+                value={line.salePrice}
+                onChange={(event) =>
+                  updateLine(line.key, { salePrice: event.target.value })
+                }
+                className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
+              />
+            </label>
+
             <p className="text-sm text-zinc-500">
               Line total: {formatMoney(line.amount)} · Profit:{" "}
               {formatMoney(line.amount - line.cost)}
@@ -158,9 +205,13 @@ export function SalePage() {
               ...current,
               {
                 key: crypto.randomUUID(),
-                itemId: items[0]?.id ?? "",
+                itemId: items.find((item) => item.stockGrams > 0)?.id ?? items[0]?.id ?? "",
                 kg: "",
                 grams: "",
+                salePrice: lastSalePrice(
+                  items,
+                  items.find((item) => item.stockGrams > 0)?.id ?? items[0]?.id ?? "",
+                ),
               },
             ])
           }
@@ -191,6 +242,7 @@ export function SalePage() {
           Complete sale
         </button>
       </form>
+      )}
     </main>
   );
 }

@@ -67,6 +67,13 @@ export function CustomersPage() {
             </tr>
           </thead>
           <tbody>
+            {customers.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
+                  No customers yet.
+                </td>
+              </tr>
+            )}
             {customers.map((customer) => {
               const customerSales = sales.filter((sale) => sale.customerId === customer.id);
               const spent = customerSales.reduce((sum, sale) => sum + sale.total, 0);

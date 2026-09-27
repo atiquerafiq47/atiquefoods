@@ -35,6 +35,13 @@ export function DataPage() {
             </tr>
           </thead>
           <tbody>
+            {sales.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
+                  No sales yet.
+                </td>
+              </tr>
+            )}
             {sales.map((sale) => (
               <tr key={sale.id} className="border-t border-zinc-100">
                 <td className="px-4 py-3 font-medium">{customerName(sale.customerId)}</td>
@@ -66,6 +73,13 @@ export function DataPage() {
             </tr>
           </thead>
           <tbody>
+            {returns.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-zinc-500">
+                  No returns yet.
+                </td>
+              </tr>
+            )}
             {returns.map((entry) => (
               <tr key={entry.id} className="border-t border-zinc-100">
                 <td className="px-4 py-3 font-medium">{customerName(entry.customerId)}</td>
@@ -92,6 +106,13 @@ export function DataPage() {
             </tr>
           </thead>
           <tbody>
+            {stockEntries.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-zinc-500">
+                  No stock movement yet.
+                </td>
+              </tr>
+            )}
             {stockEntries.map((entry) => (
               <tr key={entry.id} className="border-t border-zinc-100">
                 <td className="px-4 py-3 font-medium capitalize">

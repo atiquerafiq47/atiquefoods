@@ -24,12 +24,11 @@ type AddStockInput = {
   name: string;
   grams: number;
   purchasePricePerKg: number;
-  salePricePerKg: number;
 };
 
 type CreateSaleInput = {
   customerId: string;
-  lines: { itemId: string; grams: number }[];
+  lines: { itemId: string; grams: number; salePricePerKg: number }[];
 };
 
 type CreateReturnInput = {
@@ -45,95 +44,13 @@ type Action =
 
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
-const seedDate = "2026-09-26T10:00:00.000Z";
 
 const initialState: InventoryState = {
-  items: [
-    {
-      id: "item-rice",
-      name: "Basmati Rice",
-      stockGrams: 54000,
-      purchasePricePerKg: 220,
-      salePricePerKg: 280,
-    },
-    {
-      id: "item-flour",
-      name: "Wheat Flour",
-      stockGrams: 70000,
-      purchasePricePerKg: 110,
-      salePricePerKg: 140,
-    },
-    {
-      id: "item-sugar",
-      name: "White Sugar",
-      stockGrams: 24500,
-      purchasePricePerKg: 150,
-      salePricePerKg: 180,
-    },
-    {
-      id: "item-lentils",
-      name: "Red Lentils",
-      stockGrams: 15750,
-      purchasePricePerKg: 210,
-      salePricePerKg: 260,
-    },
-  ],
-  customers: [
-    { id: "cust-ali", name: "Ali General Store", phone: "0300-1111111" },
-    { id: "cust-city", name: "City Mart", phone: "0300-2222222" },
-    { id: "cust-fresh", name: "Fresh Hub", phone: "0300-3333333" },
-  ],
-  sales: [
-    {
-      id: "sale-1",
-      customerId: "cust-city",
-      createdAt: "2026-09-10T10:00:00.000Z",
-      lines: [
-        { itemId: "item-rice", grams: 5000, amount: 1400, cost: 1100, returnedGrams: 2000 },
-        { itemId: "item-sugar", grams: 2500, amount: 450, cost: 375, returnedGrams: 0 },
-      ],
-      total: 1850,
-    },
-    {
-      id: "sale-2",
-      customerId: "cust-city",
-      createdAt: "2026-09-20T10:00:00.000Z",
-      lines: [
-        { itemId: "item-flour", grams: 10000, amount: 1400, cost: 1100, returnedGrams: 0 },
-      ],
-      total: 1400,
-    },
-    {
-      id: "sale-3",
-      customerId: "cust-ali",
-      createdAt: "2026-09-18T10:00:00.000Z",
-      lines: [
-        { itemId: "item-lentils", grams: 3000, amount: 780, cost: 630, returnedGrams: 0 },
-      ],
-      total: 780,
-    },
-  ],
-  returns: [
-    {
-      id: "return-1",
-      saleId: "sale-1",
-      customerId: "cust-city",
-      createdAt: seedDate,
-      lines: [{ itemId: "item-rice", grams: 2000, amount: 560 }],
-      total: 560,
-    },
-  ],
-  stockEntries: [
-    { id: "in-1", itemId: "item-rice", grams: 52000, createdAt: seedDate, type: "in", cost: 11440 },
-    { id: "in-2", itemId: "item-flour", grams: 80000, createdAt: seedDate, type: "in", cost: 8800 },
-    { id: "in-3", itemId: "item-sugar", grams: 27000, createdAt: seedDate, type: "in", cost: 4050 },
-    { id: "in-4", itemId: "item-lentils", grams: 18750, createdAt: seedDate, type: "in", cost: 3938 },
-    { id: "out-1", itemId: "item-rice", grams: 5000, createdAt: seedDate, type: "out", cost: 1100 },
-    { id: "out-1b", itemId: "item-sugar", grams: 2500, createdAt: seedDate, type: "out", cost: 375 },
-    { id: "out-2", itemId: "item-flour", grams: 10000, createdAt: "2026-09-20T10:00:00.000Z", type: "out", cost: 1100 },
-    { id: "out-3", itemId: "item-lentils", grams: 3000, createdAt: "2026-09-18T10:00:00.000Z", type: "out", cost: 630 },
-    { id: "ret-1", itemId: "item-rice", grams: 2000, createdAt: seedDate, type: "return", cost: 440 },
-  ],
+  items: [],
+  customers: [],
+  sales: [],
+  returns: [],
+  stockEntries: [],
 };
 
 function reducer(state: InventoryState, action: Action): InventoryState {
@@ -153,7 +70,6 @@ function reducer(state: InventoryState, action: Action): InventoryState {
                 ...item,
                 stockGrams: item.stockGrams + action.payload.grams,
                 purchasePricePerKg: action.payload.purchasePricePerKg,
-                salePricePerKg: action.payload.salePricePerKg,
               }
             : item,
         ),
@@ -185,7 +101,7 @@ function reducer(state: InventoryState, action: Action): InventoryState {
           name,
           stockGrams: action.payload.grams,
           purchasePricePerKg: action.payload.purchasePricePerKg,
-          salePricePerKg: action.payload.salePricePerKg,
+          salePricePerKg: 0,
         },
       ],
       stockEntries: [
@@ -229,10 +145,15 @@ function reducer(state: InventoryState, action: Action): InventoryState {
     return {
       itemId: line.itemId,
       grams: line.grams,
-      amount: item ? priceForGrams(item.salePricePerKg, line.grams) : 0,
+      amount: priceForGrams(line.salePricePerKg, line.grams),
       cost: item ? priceForGrams(item.purchasePricePerKg, line.grams) : 0,
       returnedGrams: 0,
     };
+  });
+
+  const lastSalePrice = new Map<string, number>();
+  action.payload.lines.forEach((line) => {
+    lastSalePrice.set(line.itemId, line.salePricePerKg);
   });
 
   const nextItems = state.items.map((item) => {
@@ -240,7 +161,11 @@ function reducer(state: InventoryState, action: Action): InventoryState {
       .filter((line) => line.itemId === item.id)
       .reduce((sum, line) => sum + line.grams, 0);
 
-    return { ...item, stockGrams: item.stockGrams - used };
+    return {
+      ...item,
+      stockGrams: item.stockGrams - used,
+      salePricePerKg: lastSalePrice.get(item.id) ?? item.salePricePerKg,
+    };
   });
 
   const createdAt = now();
@@ -360,6 +285,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       addCustomer: (name, phone) =>
         dispatch({ type: "add-customer", payload: { name, phone } }),
       createSale: (input) => {
+        if (!input.customerId) {
+          return { error: "Add a customer first." };
+        }
+
         if (input.lines.length === 0) {
           return { error: "Add at least one item." };
         }
@@ -377,6 +306,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
           if (line.grams > item.stockGrams) {
             return { error: `Not enough stock for ${item.name}.` };
+          }
+
+          if (!line.salePricePerKg || line.salePricePerKg <= 0) {
+            return { error: `Add sale price per kg for ${item.name}.` };
           }
         }
 

@@ -15,7 +15,6 @@ export function AddStockPage() {
   const [buyPrice, setBuyPrice] = useState(
     String(items[0]?.purchasePricePerKg ?? ""),
   );
-  const [price, setPrice] = useState(String(items[0]?.salePricePerKg ?? ""));
   const [error, setError] = useState("");
 
   function submit(event: React.FormEvent) {
@@ -23,7 +22,6 @@ export function AddStockPage() {
     const itemName = name.trim();
     const weight = toGrams(Number(kg), Number(grams));
     const purchasePricePerKg = Number(buyPrice);
-    const salePricePerKg = Number(price);
 
     if (!itemName) {
       setError("Write the item name.");
@@ -40,16 +38,10 @@ export function AddStockPage() {
       return;
     }
 
-    if (!salePricePerKg || salePricePerKg <= 0) {
-      setError("Add sale price per kg.");
-      return;
-    }
-
     addStock({
       name: itemName,
       grams: weight,
       purchasePricePerKg,
-      salePricePerKg,
     });
     router.push("/inventory");
   }
@@ -59,7 +51,7 @@ export function AddStockPage() {
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">Add stock</h1>
         <p className="mt-1 text-zinc-600">
-          Add a new item or put more stock on an old item. Add the buy price and the sale price.
+          Add a new item or put more stock on an old item. Add the buy price.
         </p>
       </header>
 
@@ -81,7 +73,6 @@ export function AddStockPage() {
               );
               if (match) {
                 setBuyPrice(String(match.purchasePricePerKg));
-                setPrice(String(match.salePricePerKg));
               }
             }}
             className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
@@ -108,17 +99,6 @@ export function AddStockPage() {
             min="1"
             value={buyPrice}
             onChange={(event) => setBuyPrice(event.target.value)}
-            className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
-          Sale price per kg
-          <input
-            type="number"
-            min="1"
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
             className="h-11 rounded-xl border border-zinc-200 px-3 outline-none focus:border-emerald-500"
           />
         </label>

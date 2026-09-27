@@ -69,6 +69,11 @@ export function ReturnPage() {
         </p>
       </header>
 
+      {sales.length === 0 ? (
+        <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-8 text-center text-zinc-500">
+          No sales yet.
+        </p>
+      ) : (
       <form noValidate onSubmit={submit} className="space-y-4">
         <section className="rounded-2xl border border-zinc-200 bg-white p-5">
           <label className="flex flex-col gap-1 text-sm font-medium text-zinc-600">
@@ -143,6 +148,7 @@ export function ReturnPage() {
           Save return
         </button>
       </form>
+      )}
     </main>
   );
 }
